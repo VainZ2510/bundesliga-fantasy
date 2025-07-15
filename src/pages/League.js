@@ -15,73 +15,90 @@ function generateInviteCode(length = 8) {
 }
 
 async function generateMatchups(leagueId) {
-  // Delete existing matchups for the league (safe for "regenerate" button)
+  // Delete existing matchups for the league first
   await supabase.from('matchups').delete().eq('league_id', leagueId);
 
-  // Get all teams
+  // Fetch teams
   const { data: teams, error } = await supabase
     .from('teams')
     .select('id')
     .eq('league_id', leagueId);
 
   if (error || !teams) {
-    alert('Could not fetch teams for matchup generation');
+    alert('Could not fetch teams');
     return;
   }
-  const teamIds = teams.map(t => t.id);
+  let teamIds = teams.map(t => t.id);
+  const n = teamIds.length;
+  if (n < 2) {
+    alert('Not enough teams');
+    return;
+  }
+
+  // Add BYE for odd team numbers
+  let hasBye = false;
+  if (n % 2 !== 0) {
+    teamIds.push(null);
+    hasBye = true;
+  }
   const numTeams = teamIds.length;
-  if (numTeams < 2) {
-    alert('Not enough teams to generate matchups.');
-    return;
-  }
+  const totalRounds = numTeams - 1;
+  const matchesPerRound = numTeams / 2;
+  let rounds = [];
 
-  // If odd number of teams, add a BYE (null team)
-  let ids = [...teamIds];
-  let bye = false;
-  if (numTeams % 2 !== 0) {
-    ids.push(null);
-    bye = true;
-  }
-
-  const n = ids.length;
-  let rounds = n - 1;
-  let matchups = [];
-
-  // Single round robin
-  for (let round = 0; round < rounds; round++) {
-    for (let i = 0; i < n / 2; i++) {
-      const team1 = ids[i];
-      const team2 = ids[n - 1 - i];
-      if (team1 !== null && team2 !== null) {
-        matchups.push({
-          league_id: leagueId,
-          week: round + 1,
-          team1_id: team1,
-          team2_id: team2,
-          team1_score: null,
-          team2_score: null,
-          status: 'pending'
-        });
+  // Generate rounds (Berger Tables)
+  let arr = [...teamIds];
+  for (let round = 0; round < totalRounds; round++) {
+    let roundMatches = [];
+    for (let i = 0; i < matchesPerRound; i++) {
+      let home = arr[i];
+      let away = arr[numTeams - 1 - i];
+      if (home !== null && away !== null) {
+        roundMatches.push({ home, away });
       }
     }
-    // Rotate for next round (except first element)
-    ids = [ids[0], ...ids.slice(1, -1).reverse(), ids[ids.length - 1]];
+    rounds.push(roundMatches);
+
+    // Rotate teams, keeping first in place
+    arr = [arr[0], ...arr.slice(-1), ...arr.slice(1, -1)];
   }
 
-  // Double round robin: reverse home/away
-  const extraRounds = matchups.map(m => ({
-    ...m,
-    week: m.week + rounds,
-    team1_id: m.team2_id,
-    team2_id: m.team1_id
-  }));
-
-  // Insert both rounds
-  const allMatchups = [...matchups, ...extraRounds];
+  // Double round robin: repeat, but swap home/away, and increment week numbers
+  let matchups = [];
+  let week = 1;
+  for (let i = 0; i < rounds.length; i++) {
+    for (let match of rounds[i]) {
+      matchups.push({
+        league_id: leagueId,
+        week,
+        team1_id: match.home,
+        team2_id: match.away,
+        team1_score: null,
+        team2_score: null,
+        status: 'pending'
+      });
+    }
+    week++;
+  }
+  // Second half, swap home/away
+  for (let i = 0; i < rounds.length; i++) {
+    for (let match of rounds[i]) {
+      matchups.push({
+        league_id: leagueId,
+        week,
+        team1_id: match.away,
+        team2_id: match.home,
+        team1_score: null,
+        team2_score: null,
+        status: 'pending'
+      });
+    }
+    week++;
+  }
 
   const { error: insertError } = await supabase
     .from('matchups')
-    .insert(allMatchups);
+    .insert(matchups);
 
   if (insertError) {
     alert('Error inserting matchups: ' + insertError.message);
@@ -89,9 +106,6 @@ async function generateMatchups(leagueId) {
   }
   alert('Season schedule generated!');
 }
-
-
-
 
 
 function League() {
