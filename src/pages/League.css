@@ -1,0 +1,56 @@
+* {
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+}
+
+.league-container {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 20px;
+  text-align: center;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  background-color: #fff;
+}
+
+.league-container h1 {
+  color: #ff7f50;
+  margin-bottom: 10px;
+}
+
+.league-container form {
+  display: flex;
+  flex-direction: column;
+}
+
+.league-container input {
+  margin: 10px 0;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.league-container button {
+  padding: 10px;
+  background-color: #ff7f50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.success-message {
+  margin-top: 20px;
+}
+
+.success-message input {
+  width: 100%;
+  padding: 8px;
+  text-align: center;
+  margin-top: 10px;
+}
+.active-tab {
+  background: #ff8855 !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none;
+}

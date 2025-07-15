@@ -1,0 +1,43 @@
+* {
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+}
+
+.team-container {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 20px;
+  text-align: center;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  background-color: #fff;
+}
+
+.team-container h1 {
+  color: #ff7f50;
+  margin-bottom: 10px;
+}
+
+.team-container form {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-container input {
+  margin: 10px 0;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.team-container button {
+  padding: 10px;
+  background-color: #ff7f50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.success-message {
+  margin-top: 20px;
+}
