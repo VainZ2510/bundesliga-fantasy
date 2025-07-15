@@ -7,11 +7,9 @@ import DraftCenter from './pages/DraftCenter';
 import League from './pages/League';
 import Team from './pages/Team';
 import Standings from './pages/Standings';
-import BundesligaTest from './pages/BundesligaTest';
 import Matchups from './pages/Matchups';
 import ScoreUpdater from './pages/ScoreUpdater';
-
-
+import BundesligaTest from './pages/BundesligaTest';
 
 function App() {
   return (
@@ -23,7 +21,8 @@ function App() {
         <Link to="/dashboard">Dashboard</Link> |{" "}
         <Link to="/draft">Draft</Link> |{" "}
         <Link to="/league">League</Link> |{" "}
-        <Link to="/team">Team</Link>
+        <Link to="/team">Team</Link> |{" "}
+        <Link to="/bundesligatest">BundesligaTest</Link>
       </nav>
 
       <Routes>
@@ -37,10 +36,10 @@ function App() {
         <Route path="/standings" element={<Standings />} />
         <Route path="/matchups" element={<Matchups />} />
         <Route path="/scoreupdate" element={<ScoreUpdater />} />
+        <Route path="/bundesligatest" element={<BundesligaTest />} />
       </Routes>
     </Router>
   );
-
 }
 
 export default App;
