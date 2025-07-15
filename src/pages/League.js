@@ -15,7 +15,7 @@ function generateInviteCode(length = 8) {
 }
 
 async function generateMatchups(leagueId) {
-  // 1. Check if matchups already exist for this league
+  // Check if schedule already exists
   const { data: existing, error: existingError } = await supabase
     .from('matchups')
     .select('id')
@@ -31,7 +31,7 @@ async function generateMatchups(leagueId) {
     return;
   }
 
-  // --- (rest of your schedule creation code goes here) ---
+  // Fetch teams
   const { data: teams, error } = await supabase
     .from('teams')
     .select('id')
@@ -47,29 +47,47 @@ async function generateMatchups(leagueId) {
     alert('Not enough teams to generate matchups.');
     return;
   }
-  const rounds = (numTeams % 2 === 0 ? numTeams - 1 : numTeams); // Even: n-1, Odd: n
-  let schedule = [];
 
-  let rotated = [...teamIds];
-  for (let round = 0; round < rounds * 2; round++) {
-    for (let i = 0; i < Math.floor(numTeams / 2); i++) {
-      const team1 = rotated[i];
-      const team2 = rotated[numTeams - 1 - i];
-      if (team1 !== undefined && team2 !== undefined) {
+  // If odd number, add a bye (null)
+  let roundTeams = [...teamIds];
+  if (numTeams % 2 !== 0) roundTeams.push(null);
+
+  const rounds = roundTeams.length - 1;
+  const half = roundTeams.length / 2;
+  let schedule = [];
+  let week = 1;
+
+  // Single round robin
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < half; i++) {
+      const team1 = roundTeams[i];
+      const team2 = roundTeams[roundTeams.length - 1 - i];
+      if (team1 && team2) {
         schedule.push({
           league_id: leagueId,
-          week: round + 1,
-          team1_id: round % 2 === 0 ? team1 : team2,
-          team2_id: round % 2 === 0 ? team2 : team1,
+          week: week,
+          team1_id: team1,
+          team2_id: team2,
           team1_score: null,
           team2_score: null,
           status: 'pending'
         });
       }
     }
-    rotated = [rotated[0], ...rotated.slice(1).reverse()];
+    // rotate (except the first team)
+    roundTeams.splice(1, 0, roundTeams.pop());
+    week++;
   }
+  // Double round robin: repeat with swapped home/away and weeks
+  const more = schedule.map(m => ({
+    ...m,
+    week: week++,
+    team1_id: m.team2_id,
+    team2_id: m.team1_id
+  }));
+  schedule = [...schedule, ...more];
 
+  // Insert into db
   const { error: insertError } = await supabase
     .from('matchups')
     .insert(schedule);
@@ -80,6 +98,7 @@ async function generateMatchups(leagueId) {
   }
   alert('Season schedule generated!');
 }
+
 
 
 function League() {
