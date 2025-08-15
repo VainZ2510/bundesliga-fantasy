@@ -1,15 +1,21 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import DraftCenter from './pages/DraftCenter';
-import League from './pages/League';
-import Team from './pages/Team';
-import Standings from './pages/Standings';
-import Matchups from './pages/Matchups';
-import ScoreUpdater from './pages/ScoreUpdater';
-import BundesligaTest from './pages/BundesligaTest';
+import Home from './pages/Home.js';
+import Login from './pages/Login.js';
+import Signup from './pages/Signup.js';
+import Dashboard from './pages/Dashboard.js';
+import DraftCenter from './pages/DraftCenter.js';
+import League from './pages/League.js';
+import Team from './pages/Team.js';
+import Standings from './pages/Standings.js';
+import Matchups from './pages/Matchups.js';
+import ScoreUpdater from './pages/ScoreUpdater.js';
+import BundesligaTest from './pages/BundesligaTest.js';
+import CurrentMatchup from './pages/CurrentMatchup.js';
+
+
+
+
+
 
 function App() {
   return (
@@ -37,6 +43,8 @@ function App() {
         <Route path="/matchups" element={<Matchups />} />
         <Route path="/scoreupdate" element={<ScoreUpdater />} />
         <Route path="/bundesligatest" element={<BundesligaTest />} />
+        <Route path="/current-matchup" element={<CurrentMatchup />} />
+
       </Routes>
     </Router>
   );

@@ -1,146 +1,116 @@
 import './DraftCenter.css';
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.js';
 
-function DraftCenter({ leagueId }) {
+export default function DraftCenter({ leagueId }) {
   const [players, setPlayers] = useState([]);
-  const [myTeamPlayers, setMyTeamPlayers] = useState([]); // Your squad
-  const [message, setMessage] = useState('');
-  const [teamId, setTeamId] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [myTeam, setMyTeam] = useState(null);
   const [userId, setUserId] = useState(null);
-  const TEAM_SIZE = 8; // Change as you need
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
 
-  // Fetch all players & your squad
   useEffect(() => {
-    async function fetchData() {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user?.id) return;
-      setUserId(user.user.id);
+    async function init() {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth?.user) return;
+      setUserId(auth.user.id);
 
-      // Get your team in this league
+      // Get my team
       const { data: team } = await supabase
         .from('teams')
-        .select('id')
-        .eq('user_id', user.user.id)
+        .select('*')
+        .eq('user_id', auth.user.id)
         .eq('league_id', leagueId)
         .single();
-      if (!team) return setMessage('Create your team first!');
+      setMyTeam(team);
 
-      setTeamId(team.id);
+      // Get draft info
+      const { data: draftInfo } = await supabase
+        .from('drafts')
+        .select('*')
+        .eq('league_id', leagueId)
+        .single();
+      setDraft(draftInfo);
 
-      // Get all players
-      const { data: allPlayers, error: playersError } = await supabase
-        .from('players')
-        .select('*');
-      if (playersError) {
-        setMessage('Failed to load players!');
-        return;
-      }
-      setPlayers(allPlayers);
+      // Load available players
+      await loadPlayers();
 
-      // Get your team's current players
-      const { data: teamPlayers } = await supabase
-        .from('team_players')
-        .select('player_id')
-        .eq('team_id', team.id);
-      const myIds = teamPlayers ? teamPlayers.map(tp => tp.player_id) : [];
-
-      // Fetch player objects for your team
-      const myPlayers = allPlayers.filter(p => myIds.includes(p.id));
-      setMyTeamPlayers(myPlayers);
+      // Subscribe to draft changes in real-time
+      supabase
+        .channel('draft-updates')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'draft_picks' }, () => {
+          loadPlayers();
+          loadDraft();
+        })
+        .subscribe();
     }
-    if (leagueId) fetchData();
-  }, [leagueId, message]);
+    if (leagueId) init();
+  }, [leagueId]);
 
-  // Get IDs of all players in your team
-  const myPlayerIds = myTeamPlayers.map(p => p.id);
+  async function loadPlayers() {
+    const { data: drafted } = await supabase.from('draft_picks').select('player_id');
+    const draftedIds = drafted?.map(d => d.player_id) || [];
 
-  // Count how many you have from each club
-  const clubCounts = {};
-  myTeamPlayers.forEach(p => {
-    clubCounts[p.club] = (clubCounts[p.club] || 0) + 1;
-  });
+    const { data: all } = await supabase
+      .from('bundesliga_players')
+      .select('*')
+      .not('id', 'in', `(${draftedIds.join(',') || 'NULL'})`);
 
-  // All available players (not already in your team, and you don't already have 2 from this club)
-  const availablePlayers = players.filter(
-    p =>
-      !myPlayerIds.includes(p.id) &&
-      (clubCounts[p.club] || 0) < 2
-  );
+    setPlayers(all || []);
+    setLoading(false);
+  }
 
-  // Add a player (if not full and not >2 from club)
-  const handleAddPlayer = async (player) => {
+  async function loadDraft() {
+    const { data: draftInfo } = await supabase
+      .from('drafts')
+      .select('*')
+      .eq('league_id', leagueId)
+      .single();
+    setDraft(draftInfo);
+  }
+
+  async function pickPlayer(playerId) {
     setMessage('');
-    if (myTeamPlayers.length >= TEAM_SIZE) {
-      setMessage(`Max team size is ${TEAM_SIZE}`);
-      return;
+    const { error } = await supabase.rpc('make_draft_pick', {
+      p_draft_id: draft.id,
+      p_user_id: userId,
+      p_player_id: playerId
+    });
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage('✅ Pick made!');
     }
-    // Check club limit
-    const clubNum = myTeamPlayers.filter(p => p.club === player.club).length;
-    if (clubNum >= 2) {
-      setMessage('You can only have 2 players from one club.');
-      return;
-    }
-    // Add
-    const { error } = await supabase
-      .from('team_players')
-      .insert([{ team_id: teamId, player_id: player.id }]);
-    if (error) setMessage('Error adding player');
-    else setMessage('Player added!');
-  };
+  }
 
-  // Remove player
-  const handleDropPlayer = async (playerId) => {
-    setMessage('');
-    const { error } = await supabase
-      .from('team_players')
-      .delete()
-      .eq('team_id', teamId)
-      .eq('player_id', playerId);
-    if (error) setMessage('Error dropping player');
-    else setMessage('Player dropped!');
-  };
+  if (loading) return <div>Loading draft...</div>;
+
+  const isMyTurn = draft?.current_pick_user_id === userId;
 
   return (
     <div className="draft-container">
-      <h2>Your Squad</h2>
-      {myTeamPlayers.length === 0 ? (
-        <div>No players in your team.</div>
-      ) : (
-        <ul>
-          {myTeamPlayers.map(p => (
-            <li key={p.id} className="player-card">
-              <strong>{p.name}</strong> - {p.club} ({p.position})
-              <button style={{ marginLeft: 10 }} onClick={() => handleDropPlayer(p.id)}>
-                Drop
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <h2>Draft Center</h2>
+      <p>{isMyTurn ? '🟢 Your turn!' : '⏳ Waiting for other players...'}</p>
+      {message && <p style={{ color: 'yellow' }}>{message}</p>}
 
-      <h2>Add Players</h2>
-      {message && <div className="success-message">{message}</div>}
-      <div style={{ marginBottom: 10 }}>
-        {`You can have max ${TEAM_SIZE} players and no more than 2 from any club.`}
-      </div>
-      {availablePlayers.length === 0 ? (
-        <div>No available players to add.</div>
+      <h3>Available Players</h3>
+      {players.length === 0 ? (
+        <p>No players left to draft.</p>
       ) : (
-        <div>
-          {availablePlayers.map(player => (
-            <div key={player.id} className="player-card">
-              <strong>{player.name}</strong>
-              <span style={{ marginLeft: 6 }}>{player.club} ({player.position})</span>
-              <button style={{ marginLeft: 10 }} onClick={() => handleAddPlayer(player)}>
-                Add
-              </button>
-            </div>
-          ))}
-        </div>
+        players.map(p => (
+          <div key={p.id} className="player-card">
+            <strong>{p.name}</strong> — {p.club} ({p.position})
+            <button
+              onClick={() => pickPlayer(p.id)}
+              disabled={!isMyTurn}
+              style={{ marginLeft: 10 }}
+            >
+              Draft
+            </button>
+          </div>
+        ))
       )}
     </div>
   );
 }
-
-export default DraftCenter;

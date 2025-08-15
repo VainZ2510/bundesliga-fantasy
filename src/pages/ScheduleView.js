@@ -1,6 +1,6 @@
 // src/ScheduleView.js
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.js';
 
 function ScheduleView({ leagueId }) {
   const [matchups, setMatchups] = useState([]);

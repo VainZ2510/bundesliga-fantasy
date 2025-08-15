@@ -1,7 +1,11 @@
 import './Login.css';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.js';
+import DraftCenter from './DraftCenter.js';
+import ScheduleView from './ScheduleView.js';
+import StandingsTable from './StandingsTable.js';
+
 
 function Login() {
   const [email, setEmail] = useState('');

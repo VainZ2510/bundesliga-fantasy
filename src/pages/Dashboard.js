@@ -1,6 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.js';
+import DraftCenter from './DraftCenter.js';
+import ScheduleView from './ScheduleView.js';
+import StandingsTable from './StandingsTable.js';
 
 function Dashboard() {
   const leagueId = localStorage.getItem('leagueId');

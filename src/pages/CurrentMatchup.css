@@ -1,0 +1,98 @@
+.cm-wrap {
+  padding: 18px 0 42px;
+}
+
+.cm-title {
+  text-align: center;
+  font-size: 34px;
+  font-weight: 800;
+  margin: 8px 0 18px;
+}
+.cm-title .good { color: #18a657; }
+.cm-title .bad  { color: #e14646; }
+
+.cm-card {
+  width: min(1120px, 96%);
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #ececec;
+  box-shadow: 0 8px 22px rgba(0,0,0,.05);
+  overflow: hidden;
+}
+
+.cm-head {
+  display: grid;
+  grid-template-columns: 1fr 170px 1fr;
+  background: #f7f7f7;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  font-size: 13px;
+  border-bottom: 1px solid #ececec;
+}
+.cm-head > div {
+  padding: 12px 16px;
+}
+.cm-head .center { text-align: center; }
+.cm-head .right  { text-align: right; }
+
+.cm-row {
+  display: grid;
+  grid-template-columns: 1fr 170px 1fr;
+  align-items: center;
+}
+.cm-row:nth-child(odd) { background: #fcfcfc; }
+
+.cm-cell {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f1f1;
+}
+.cm-cell.center { text-align: center; }
+.cm-cell.right  { text-align: right; }
+
+.cm-player {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cm-player.left  { align-items: flex-start; }
+.cm-player.right { align-items: flex-end; }
+
+.cm-name { font-weight: 700; }
+.cm-pos  { font-size: 12px; color: #7a7a7a; }
+
+.cm-score {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+.cm-score .sep { opacity: .35; }
+
+.cm-missing { opacity: .45; }
+
+.cm-empty {
+  padding: 22px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+/* small screens */
+@media (max-width: 720px) {
+  .cm-head { grid-template-columns: 1fr 120px 1fr; }
+  .cm-row  { grid-template-columns: 1fr 120px 1fr; }
+}
+.cm-rowtop {
+  display: flex; align-items: center; gap: 10px;
+}
+.cm-crest {
+  width: 22px; height: 22px; object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.05));
+}
+.cm-icons {
+  display: flex; gap: 8px; margin-top: 6px; font-size: 12px; color: #374151;
+}

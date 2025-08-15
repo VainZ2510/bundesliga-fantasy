@@ -1,9 +1,54 @@
 import './Standings.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient.js';
 
 function Standings() {
+  const [standings, setStandings] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+
+  // Fetch standings
+  const fetchStandings = async () => {
+    const { data, error } = await supabase
+      .from('league_standings')
+      .select(`
+        team_id,
+        wins,
+        losses,
+        draws,
+        points_for,
+        points_against,
+        points,
+        teams(name)
+      `)
+      .order('points', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching standings:', error);
+    } else {
+      setStandings(data || []);
+    }
+  };
+
+  useEffect(() => {
+    fetchStandings();
+
+    // Live updates
+    const subscription = supabase
+      .channel('standings-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'league_standings' },
+        () => {
+          fetchStandings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -22,34 +67,22 @@ function Standings() {
             <th>#</th>
             <th>Team</th>
             <th>Record</th>
-            <th>Points</th>
+            <th>PF</th>
+            <th>PA</th>
+            <th>Pts</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>1</td>
-            <td>Team A</td>
-            <td>3-0</td>
-            <td>9</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>Team B</td>
-            <td>2-1</td>
-            <td>6</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>Team C</td>
-            <td>1-2</td>
-            <td>3</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>Team D</td>
-            <td>0-3</td>
-            <td>0</td>
-          </tr>
+          {standings.map((team, index) => (
+            <tr key={team.team_id}>
+              <td>{index + 1}</td>
+              <td>{team.teams?.name}</td>
+              <td>{team.wins}-{team.losses}-{team.draws}</td>
+              <td>{team.points_for}</td>
+              <td>{team.points_against}</td>
+              <td>{team.points}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
